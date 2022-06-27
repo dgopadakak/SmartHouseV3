@@ -31,7 +31,9 @@ public class MainActivity extends AppCompatActivity
     Connection connection1;
     Connection connection2;
 
-    private ProgressBar progressBar;
+    // view на первой вкладке
+    private ProgressBar progressBarServer1;
+    private ProgressBar progressBarWater;
     private TextView textViewProgress;
     private RadioButton radioButtonHome;
     private RadioButton radioButtonStreet;
@@ -40,8 +42,19 @@ public class MainActivity extends AppCompatActivity
     private TextView textViewPumpTimeNum;
     private Button refreshButton;
 
+    // view на второй вкладке
+    private ProgressBar progressBarServer2;
     private Button gLAviaryButton;
     private Switch switchCHLight;
+
+    // переменные, проверяющие прошла ли загрузка server1:
+    private boolean isProgressBarWater = false;
+    private boolean isRadioButtonMode = false;
+    private boolean isSwitchPump = false;
+    private boolean isTextViewPumpTimeNum = false;
+
+    // переменные, проверяющие прошла ли загрузка server2:
+    private boolean isSwitchCHLight = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -66,7 +79,9 @@ public class MainActivity extends AppCompatActivity
 
         tabHost.setCurrentTab(0);
 
-        progressBar = findViewById(R.id.progress_bar);
+        // view на первой вкладке
+        progressBarServer1 = findViewById(R.id.progressBarServer1);
+        progressBarWater = findViewById(R.id.progress_bar);
         textViewProgress = findViewById(R.id.text_view_progress);
         radioButtonHome = findViewById(R.id.radioButtonModeHome);
         radioButtonStreet = findViewById(R.id.radioButtonModeStreet);
@@ -74,16 +89,29 @@ public class MainActivity extends AppCompatActivity
         textViewPumpTimeNum = findViewById(R.id.textViewPumpTimeNum);
         textViewPumpTimeTitle.setText("Насос работал:");
         textViewPumpTimeNum.setText("0 минут.");
-
         radioButtonHome.setOnClickListener(radioButtonClickListener);
         radioButtonStreet.setOnClickListener(radioButtonClickListener);
-
         switchPump = findViewById(R.id.switchPump);
         refreshButton = findViewById(R.id.buttonRefresh);
+
+        // Делаем невидимым все на первой вкладке, кроме загрузки
+        progressBarWater.setVisibility(View.INVISIBLE);
+        textViewProgress.setVisibility(View.INVISIBLE);
+        radioButtonHome.setVisibility(View.INVISIBLE);
+        radioButtonStreet.setVisibility(View.INVISIBLE);
+        switchPump.setVisibility(View.INVISIBLE);
+        textViewPumpTimeTitle.setVisibility(View.INVISIBLE);
+        textViewPumpTimeNum.setVisibility(View.INVISIBLE);
+        refreshButton.setVisibility(View.INVISIBLE);
+
+        // view на второй вкладке
+        progressBarServer2 = findViewById(R.id.progressBarServer2);
         gLAviaryButton = findViewById(R.id.buttonGLAviary);
-
-
         switchCHLight = findViewById(R.id.switchCHLight);
+
+        // Делаем невидимым все на второй вкладке, кроме загрузки
+        gLAviaryButton.setVisibility(View.INVISIBLE);
+        switchCHLight.setVisibility(View.INVISIBLE);
 
         if (switchPump != null)
         {
@@ -202,7 +230,8 @@ public class MainActivity extends AppCompatActivity
                 try
                 {
                     int percentInt = Integer.parseInt(percentString);
-                    progressBar.setProgress(percentInt);
+                    progressBarWater.setProgress(percentInt);
+                    isProgressBarWater = true;
                 }
                 catch (Exception e)
                 {
@@ -217,6 +246,7 @@ public class MainActivity extends AppCompatActivity
                 String pumpTimeString = text.substring(1);
                 pumpTimeString = pumpTimeString + " минут.";
                 textViewPumpTimeNum.setText(pumpTimeString);
+                isTextViewPumpTimeNum = true;
             }
             else
             {
@@ -228,6 +258,7 @@ public class MainActivity extends AppCompatActivity
                             radioButtonHome.setChecked(true);
                             radioButtonStreet.setChecked(false);
                             switchPump.setClickable(false);
+                            isRadioButtonMode = true;
                         }
                         break;
 
@@ -237,30 +268,63 @@ public class MainActivity extends AppCompatActivity
                             radioButtonHome.setChecked(false);
                             radioButtonStreet.setChecked(true);
                             switchPump.setClickable(true);
+                            isRadioButtonMode = true;
                         }
                         break;
 
                     case "PON":
                         switchPump.setChecked(true);
                         textViewPumpTimeTitle.setText("Насос работает:");
+                        isSwitchPump = true;
                         break;
 
                     case "POFF":
                         switchPump.setChecked(false);
                         textViewPumpTimeTitle.setText("Насос работал:");
+                        isSwitchPump = true;
                         break;
 
                     case "CHON":
                         switchCHLight.setChecked(true);
+                        isSwitchCHLight = true;
                         break;
 
                     case "CHOFF":
                         switchCHLight.setChecked(false);
+                        isSwitchCHLight = true;
                         break;
 
                     default:
                         break;
                 }
+            }
+            isFirstScreenReady();
+            isSecondScreenReady();
+        }
+
+        void isFirstScreenReady()
+        {
+            if (isProgressBarWater && isRadioButtonMode && isSwitchPump && isTextViewPumpTimeNum)
+            {
+                progressBarServer1.setVisibility(View.INVISIBLE);
+                progressBarWater.setVisibility(View.VISIBLE);
+                textViewProgress.setVisibility(View.VISIBLE);
+                radioButtonHome.setVisibility(View.VISIBLE);
+                radioButtonStreet.setVisibility(View.VISIBLE);
+                switchPump.setVisibility(View.VISIBLE);
+                textViewPumpTimeTitle.setVisibility(View.VISIBLE);
+                textViewPumpTimeNum.setVisibility(View.VISIBLE);
+                refreshButton.setVisibility(View.VISIBLE);
+            }
+        }
+
+        void isSecondScreenReady()
+        {
+            if (isSwitchCHLight)
+            {
+                progressBarServer2.setVisibility(View.INVISIBLE);
+                gLAviaryButton.setVisibility(View.VISIBLE);
+                switchCHLight.setVisibility(View.VISIBLE);
             }
         }
     }
