@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">SmartHouseV3</string>
+    <string name="refresh_button">Обновить</string>
+    <string name="pump_switch">Насос</string>
+    <string name="to_house">В дом</string>
+    <string name="to_street">На улицу</string>
+    <string name="soon">Скоро</string>
+    <string name="canopyLight">Свет в птичнике</string>
+    <string name="lightInChickenHouse">Свет в курином домике</string>
+</resources>
