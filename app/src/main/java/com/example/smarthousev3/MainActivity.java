@@ -2,8 +2,12 @@ package com.example.smarthousev3;
 
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
+import android.content.res.ColorStateList;
+import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ProgressBar;
@@ -31,9 +35,11 @@ public class MainActivity extends AppCompatActivity
     Connection connection1;
     Connection connection2;
 
+    private TabHost tabHost;
+
     // view на первой вкладке
     private ProgressBar progressBarServer1;
-    private ProgressBar progressBarWater;
+    private WebView webViewWater;
     private TextView textViewProgress;
     private RadioButton radioButtonHome;
     private RadioButton radioButtonStreet;
@@ -56,6 +62,7 @@ public class MainActivity extends AppCompatActivity
     // переменные, проверяющие прошла ли загрузка server2:
     private boolean isSwitchCHLight = false;
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -63,8 +70,9 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        getSupportActionBar().hide();
 
-        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.setup();
 
         TabHost.TabSpec tabSpec = tabHost.newTabSpec("tag1");
@@ -79,9 +87,11 @@ public class MainActivity extends AppCompatActivity
 
         tabHost.setCurrentTab(0);
 
+        refreshButton = findViewById(R.id.buttonRefresh);
+
         // view на первой вкладке
         progressBarServer1 = findViewById(R.id.progressBarServer1);
-        progressBarWater = findViewById(R.id.progress_bar);
+        webViewWater = findViewById(R.id.webViewWater);
         textViewProgress = findViewById(R.id.text_view_progress);
         radioButtonHome = findViewById(R.id.radioButtonModeHome);
         radioButtonStreet = findViewById(R.id.radioButtonModeStreet);
@@ -92,17 +102,17 @@ public class MainActivity extends AppCompatActivity
         radioButtonHome.setOnClickListener(radioButtonClickListener);
         radioButtonStreet.setOnClickListener(radioButtonClickListener);
         switchPump = findViewById(R.id.switchPump);
-        refreshButton = findViewById(R.id.buttonRefresh);
 
         // Делаем невидимым все на первой вкладке, кроме загрузки
-        progressBarWater.setVisibility(View.INVISIBLE);
+        webViewWater.setVisibility(View.INVISIBLE);
+        webViewWater.getSettings().setJavaScriptEnabled(true);
+        webViewWater.loadUrl("file:///android_asset/index.html");
         textViewProgress.setVisibility(View.INVISIBLE);
         radioButtonHome.setVisibility(View.INVISIBLE);
         radioButtonStreet.setVisibility(View.INVISIBLE);
         switchPump.setVisibility(View.INVISIBLE);
         textViewPumpTimeTitle.setVisibility(View.INVISIBLE);
         textViewPumpTimeNum.setVisibility(View.INVISIBLE);
-        refreshButton.setVisibility(View.INVISIBLE);
 
         // view на второй вкладке
         progressBarServer2 = findViewById(R.id.progressBarServer2);
@@ -230,7 +240,7 @@ public class MainActivity extends AppCompatActivity
                 try
                 {
                     int percentInt = Integer.parseInt(percentString);
-                    progressBarWater.setProgress(percentInt);
+                    refreshPercentJS(percentInt);
                     isProgressBarWater = true;
                 }
                 catch (Exception e)
@@ -306,15 +316,36 @@ public class MainActivity extends AppCompatActivity
         {
             if (isProgressBarWater && isRadioButtonMode && isSwitchPump && isTextViewPumpTimeNum)
             {
+//                int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+//                switch (currentNightMode)
+//                {
+//                    case Configuration.UI_MODE_NIGHT_NO:
+//                        // ночная тема не активна, используется светлая тема
+//                        lightThemeJS();
+//                        break;
+//                    case Configuration.UI_MODE_NIGHT_YES:
+//                        // ночная тема активна, и она используется
+//                        darkThemeJS();
+//                        break;
+//                }
+                ColorStateList colorStateList = textViewPumpTimeTitle.getTextColors();
+                int color = colorStateList.getDefaultColor();
                 progressBarServer1.setVisibility(View.INVISIBLE);
-                progressBarWater.setVisibility(View.VISIBLE);
+                if (color != -1979711488)       // ночная тема
+                {
+                    darkThemeJS();
+                }
+                else        // дневная тема
+                {
+                    lightThemeJS();
+                }
+                webViewWater.setVisibility(View.VISIBLE);
                 textViewProgress.setVisibility(View.VISIBLE);
                 radioButtonHome.setVisibility(View.VISIBLE);
                 radioButtonStreet.setVisibility(View.VISIBLE);
                 switchPump.setVisibility(View.VISIBLE);
                 textViewPumpTimeTitle.setVisibility(View.VISIBLE);
                 textViewPumpTimeNum.setVisibility(View.VISIBLE);
-                refreshButton.setVisibility(View.VISIBLE);
             }
         }
 
@@ -326,6 +357,34 @@ public class MainActivity extends AppCompatActivity
                 gLAviaryButton.setVisibility(View.VISIBLE);
                 switchCHLight.setVisibility(View.VISIBLE);
             }
+        }
+
+        private void refreshPercentJS(int percent)
+        {
+            webViewWater.evaluateJavascript("document.getElementById(\"p1\").innerHTML = \".wave:after,.wave:before{top: " + (50 - percent) + "%;}\"",
+                    s -> {
+
+                    });
+        }
+
+        private void lightThemeJS()
+        {
+            webViewWater.evaluateJavascript("document.body.style.backgroundColor = \"#fff\";" +
+                            "let circleElement = document.querySelector('.circle');" +
+                            "circleElement.style.borderColor=\"#fff\"",
+                    s -> {
+
+                    });
+        }
+
+        private void darkThemeJS()
+        {
+            webViewWater.evaluateJavascript("document.body.style.backgroundColor = \"#121212\";" +
+                            "let circleElement = document.querySelector('.circle');" +
+                            "circleElement.style.borderColor=\"#121212\"",
+                    s -> {
+
+                    });
         }
     }
 
@@ -367,7 +426,15 @@ public class MainActivity extends AppCompatActivity
 
     public void onClickRefresh(View view)
     {
-        connection1.sendDataToServer("[R]");
+        int tabId = tabHost.getCurrentTab();
+        if (tabId == 0)
+        {
+            connection1 = new Connection(SERVER1_IP, SERVER1_PORT, "[R]");
+        }
+        if (tabId == 1)
+        {
+            connection2 = new Connection(SERVER2_IP, SERVER2_PORT, "{R}");
+        }
     }
 
     public void onClickSwitchGeneralLightInAviary(View view)
